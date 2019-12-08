@@ -6,6 +6,14 @@
 #include <QTextEdit>
 #include <QDockWidget>
 #include <QListWidget>
+#include <QFile>
+#include <QFileDialog>
+#include <QDir>
+#include <QFileInfo>
+#include <QDebug>
+#include <QStandardPaths>
+
+#include <QtSql>
 
 namespace Ui {
 class MainWindow;
@@ -21,6 +29,7 @@ public:
 
 private slots:
     void groupSelected();
+    void mcChanged(int, int);
 
 private:
     QMenu *fileMenu;
@@ -48,11 +57,13 @@ private:
     void createActions();
     void createMenus();
 
+    QSqlDatabase db;
+
     QTabWidget *tabWidget;
     QListWidget *groupsList;
 
-    QTableWidget *table;
-
+    QList<QTableWidget*> *tlist;
+    QList<QString> *nlist;
 };
 
 
