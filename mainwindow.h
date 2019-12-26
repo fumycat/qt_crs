@@ -13,6 +13,8 @@
 #include <QDebug>
 #include <QStandardPaths>
 #include <QStyle>
+#include <QInputDialog>
+#include <QMessageBox>
 
 #include <QtSql>
 
@@ -31,6 +33,7 @@ public:
 
 private slots:
     void groupSelected();
+    void addStudentSlot();
     void mcChanged(int, int);
 
 private:
@@ -55,6 +58,9 @@ private:
     QAction *printAct;
     QAction *exitAct;
 
+    QAction *addGroup;
+    QAction *addStudent;
+
     QAction *helpAct;
     QAction *aboutAct;
     QAction *aboutQtAct;
@@ -63,6 +69,7 @@ private:
     void createActions();
     void createMenus();
 
+    int currentGroup;
 
     QSqlDatabase db;
 

@@ -5,6 +5,8 @@ MainWindow::MainWindow() : tabWidget(new QTabWidget) // , ui(new Ui::MainWindow)
 {
     setCentralWidget(tabWidget);
 
+    currentGroup = -2;
+
     db = QSqlDatabase::addDatabase("QSQLITE");
     db.setDatabaseName("C:\\Users\\Fumycat\\Desktop\\sqlite3.db");
     db.open();
@@ -86,6 +88,8 @@ MainWindow::MainWindow() : tabWidget(new QTabWidget) // , ui(new Ui::MainWindow)
         connect(tlist->at(i), &QTableWidget::cellChanged, this, &MainWindow::mcChanged);
     }
 
+    if (groups->size() != 0) currentGroup = -1;
+
     createDockWindow();
     createActions();
     createMenus();
@@ -113,23 +117,25 @@ void MainWindow::createDockWindow()
 void MainWindow::createActions()
 {
     // Actions
-    //new db
     newAct = new QAction(this->style()->standardIcon(QStyle::SP_FileIcon), tr("Новая база данных..."), this);
     newAct->setShortcuts(QKeySequence::New);
-    newAct->setStatusTip(tr("Create a new file"));
 
-    //open db
-    openAct = new QAction(this->style()->standardIcon(QStyle::SP_DirIcon) ,tr("Открыть базу данных..."), this);
+    openAct = new QAction(this->style()->standardIcon(QStyle::SP_DirOpenIcon) ,tr("Открыть базу данных..."), this);
     openAct->setShortcuts(QKeySequence::Open);
-    openAct->setStatusTip(tr("Open file"));
 
-    //save db
-    saveAct = new QAction(this->style()->standardIcon(QStyle::SP_DriveCDIcon) ,tr("Сохранить изменения"), this);
+    saveAct = new QAction(this->style()->standardIcon(QStyle::SP_DialogSaveButton) ,tr("Сохранить изменения"), this);
     saveAct->setShortcut(QKeySequence::Save);
-    openAct->setStatusTip(tr("Сохранить всё и записать в базу данных"));
+
+    addStudent = new QAction(this->style()->standardIcon(QStyle::SP_DialogYesButton) ,tr("Добавить студента"), this);
+    addStudent->setShortcut(QKeySequence::AddTab);
+    connect(addStudent, &QAction::triggered, this, &MainWindow::addStudentSlot);
+
+    addGroup = new QAction(this->style()->standardIcon(QStyle::SP_FileDialogNewFolder) ,tr("Добавить группу"), this);
+    addGroup->setShortcut(QKeySequence::Italic);
+
 
     // Toolbar
-    QList<QAction*> toolbarActionList = {newAct, openAct, saveAct};
+    QList<QAction*> toolbarActionList = {newAct, openAct, saveAct, addGroup, addStudent};
     QToolBar *fileToolBar = addToolBar(tr("File"));
     fileToolBar->addActions(toolbarActionList);
 }
@@ -140,7 +146,50 @@ void MainWindow::groupSelected()
     QListWidgetItem *item = this->groupsList->selectedItems()[0];
 
     for (int i = 0; i < groups->size(); ++i){
-        if (groups->at(i) == item->text()) updateData(i);
+        if (groups->at(i) == item->text()) {
+            updateData(i);
+            currentGroup = i;
+        }
+    }
+}
+
+void MainWindow::addStudentSlot()
+{
+    switch (currentGroup){
+        case -2:
+            {
+                QMessageBox::warning(this, tr("Ошибка"),
+                               tr("Невозможно добавить студента, так как нет ни одной группы.\n"
+                                  "Сначала создайте группу."));
+                return;
+            }
+        case -1:
+            {
+                QMessageBox::warning(this, tr("Ошибка"),
+                                       tr("Невозможно добавить студента, так как не выбрана ни одна группа.\n"
+                                          "Сначала выберите группу в боковом меню."));
+                return;
+            }
+        default:
+            break;
+    }
+    if (currentGroup == -1){
+
+    }
+    bool ok;
+    QString text = QInputDialog::getText(this, tr("Добавление студента"), tr("Введите ФИО студента:"),
+                                         QLineEdit::Normal, "", &ok);
+    if (ok && !text.isEmpty()) {
+        struct r *t = new r;
+        t->name = text;
+        t->phone = "";
+        t->email = "";
+        t->pname = "";
+        t->pphone = "";
+        t->sscore = "";
+        t->perf = "";
+        rd[currentGroup].append(t);
+        updateData(currentGroup);
     }
 }
 
@@ -155,6 +204,8 @@ void MainWindow::createMenus()
     fileMenu = menuBar()->addMenu(tr("&Файл"));
     fileMenu->addAction(newAct);
     fileMenu->addAction(openAct);
+    fileMenu->addSeparator();
+    fileMenu->addAction(addStudent);
 //    fileMenu->addAction(saveAct);
 //    fileMenu->addAction(printAct);
 //    fileMenu->addSeparator();
@@ -167,6 +218,7 @@ void MainWindow::updateData(int group)
     for (int i = 0; i < rd[group].size(); ++i)
     {
         tlist->at(0)->setItem(i, 0, new QTableWidgetItem(rd[group].at(i)->name));
+        tlist->at(0)->item(i, 0)->setFlags(Qt::ItemIsSelectable|Qt::ItemIsEnabled);
         tlist->at(0)->setItem(i, 1, new QTableWidgetItem(rd[group].at(i)->phone));
         tlist->at(0)->setItem(i, 2, new QTableWidgetItem(rd[group].at(i)->email));
         tlist->at(0)->setItem(i, 3, new QTableWidgetItem(rd[group].at(i)->sscore));
@@ -177,6 +229,7 @@ void MainWindow::updateData(int group)
     for (int i = 0; i < rd[group].size(); ++i)
     {
         tlist->at(1)->setItem(i, 0, new QTableWidgetItem(rd[group].at(i)->name));
+        tlist->at(1)->item(i, 0)->setFlags(Qt::ItemIsSelectable|Qt::ItemIsEnabled);
         tlist->at(1)->setItem(i, 1, new QTableWidgetItem(rd[group].at(i)->pname));
         tlist->at(1)->setItem(i, 2, new QTableWidgetItem(rd[group].at(i)->pphone));
     }
