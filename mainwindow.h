@@ -34,6 +34,8 @@ public:
 private slots:
     void groupSelected();
     void addStudentSlot();
+    void exitApplicationSlot();
+    void configureteScoreSlot();
     void mcChanged(int, int);
 
 private:
@@ -60,6 +62,7 @@ private:
 
     QAction *addGroup;
     QAction *addStudent;
+    QAction *configScore;
 
     QAction *helpAct;
     QAction *aboutAct;

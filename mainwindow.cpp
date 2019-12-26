@@ -77,7 +77,7 @@ MainWindow::MainWindow() : tabWidget(new QTabWidget) // , ui(new Ui::MainWindow)
 
     QTableWidget *table3;
     table3 = new QTableWidget;
-    table3 -> setColumnCount(3);
+    table3 -> setColumnCount(0);
     table3 -> setRowCount(0);
     table3 -> setHorizontalHeaderLabels(QList<QString> {"ФИО", "ФИО Родителя", "Телефон родителя"});
     tlist->append(table3);
@@ -117,40 +117,63 @@ void MainWindow::createDockWindow()
 void MainWindow::createActions()
 {
     // Actions
+    exitAct = new QAction(this->style()->standardIcon(QStyle::SP_DialogNoButton), tr("Выход"), this);
+    exitAct->setShortcut(QKeySequence("Ctrl+Q"));
+    connect(exitAct, &QAction::triggered, this, &MainWindow::exitApplicationSlot);
+
     newAct = new QAction(this->style()->standardIcon(QStyle::SP_FileIcon), tr("Новая база данных..."), this);
     newAct->setShortcuts(QKeySequence::New);
+    // TODO
 
     openAct = new QAction(this->style()->standardIcon(QStyle::SP_DirOpenIcon) ,tr("Открыть базу данных..."), this);
     openAct->setShortcuts(QKeySequence::Open);
+    // TODO
 
     saveAct = new QAction(this->style()->standardIcon(QStyle::SP_DialogSaveButton) ,tr("Сохранить изменения"), this);
     saveAct->setShortcut(QKeySequence::Save);
+    // TODO
 
     addStudent = new QAction(this->style()->standardIcon(QStyle::SP_DialogYesButton) ,tr("Добавить студента"), this);
-    addStudent->setShortcut(QKeySequence::AddTab);
+    addStudent->setShortcut(QKeySequence("Ctrl+T"));
     connect(addStudent, &QAction::triggered, this, &MainWindow::addStudentSlot);
 
     addGroup = new QAction(this->style()->standardIcon(QStyle::SP_FileDialogNewFolder) ,tr("Добавить группу"), this);
-    addGroup->setShortcut(QKeySequence::Italic);
+    addGroup->setShortcut(QKeySequence("Ctrl+G"));
+    // TODO
 
+    configScore = new QAction(this->style()->standardIcon(QStyle::SP_CommandLink) ,tr("Настроить предметы"), this);
+    configScore->setShortcut(QKeySequence("Ctrl+C"));
+    // TODO
 
-    // Toolbar
-    QList<QAction*> toolbarActionList = {newAct, openAct, saveAct, addGroup, addStudent};
-    QToolBar *fileToolBar = addToolBar(tr("File"));
-    fileToolBar->addActions(toolbarActionList);
+    // Toolbars
+    QList<QAction*> toolbarActionList1 = {newAct, openAct, saveAct};
+    QToolBar *fileToolBar1 = addToolBar(tr("Панель работы с файлами"));
+    fileToolBar1->addActions(toolbarActionList1);
+
+    QList<QAction*> toolbarActionList2 = {addGroup, addStudent, configScore};
+    QToolBar *fileToolBar2 = addToolBar(tr("Панель работы с данными"));
+    fileToolBar2->addActions(toolbarActionList2);
 }
 
 void MainWindow::groupSelected()
 {
-
     QListWidgetItem *item = this->groupsList->selectedItems()[0];
-
     for (int i = 0; i < groups->size(); ++i){
         if (groups->at(i) == item->text()) {
             updateData(i);
             currentGroup = i;
         }
     }
+}
+
+void MainWindow::configureteScoreSlot()
+{
+    // TODO
+}
+
+void MainWindow::exitApplicationSlot()
+{
+    QApplication::quit();
 }
 
 void MainWindow::addStudentSlot()
@@ -173,12 +196,8 @@ void MainWindow::addStudentSlot()
         default:
             break;
     }
-    if (currentGroup == -1){
-
-    }
     bool ok;
-    QString text = QInputDialog::getText(this, tr("Добавление студента"), tr("Введите ФИО студента:"),
-                                         QLineEdit::Normal, "", &ok);
+    QString text = QInputDialog::getText(this, tr("Добавление студента"), tr("Введите ФИО студента:"), QLineEdit::Normal, "", &ok);
     if (ok && !text.isEmpty()) {
         struct r *t = new r;
         t->name = text;
@@ -204,12 +223,10 @@ void MainWindow::createMenus()
     fileMenu = menuBar()->addMenu(tr("&Файл"));
     fileMenu->addAction(newAct);
     fileMenu->addAction(openAct);
-    fileMenu->addSeparator();
-    fileMenu->addAction(addStudent);
-//    fileMenu->addAction(saveAct);
+    fileMenu->addAction(saveAct);
 //    fileMenu->addAction(printAct);
-//    fileMenu->addSeparator();
-//    fileMenu->addAction(exitAct);
+    fileMenu->addSeparator();
+    fileMenu->addAction(exitAct);
 }
 
 void MainWindow::updateData(int group)
