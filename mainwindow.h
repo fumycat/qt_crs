@@ -12,6 +12,7 @@
 #include <QFileInfo>
 #include <QDebug>
 #include <QStandardPaths>
+#include <QStyle>
 
 #include <QtSql>
 
@@ -26,12 +27,23 @@ class MainWindow : public QMainWindow
 public:
     MainWindow();
     ~MainWindow();
+    void updateData(int);
 
 private slots:
     void groupSelected();
     void mcChanged(int, int);
 
 private:
+    struct r {
+        QString name;
+        QString phone;
+        QString email;
+        QString pname;
+        QString pphone;
+        QString sscore;
+        QString perf;
+    };
+
     QMenu *fileMenu;
     QMenu *editMenu;
     QMenu *formatMenu;
@@ -43,12 +55,6 @@ private:
     QAction *printAct;
     QAction *exitAct;
 
-    QAction *undoAct;
-    QAction *redoAct;
-    QAction *cutAct;
-    QAction *copyAct;
-    QAction *pasteAct;
-
     QAction *helpAct;
     QAction *aboutAct;
     QAction *aboutQtAct;
@@ -57,6 +63,7 @@ private:
     void createActions();
     void createMenus();
 
+
     QSqlDatabase db;
 
     QTabWidget *tabWidget;
@@ -64,6 +71,10 @@ private:
 
     QList<QTableWidget*> *tlist;
     QList<QString> *nlist;
+
+    QList<QString> *groups;
+
+    QList< QList<r*> > rd;
 };
 
 
