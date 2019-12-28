@@ -1,9 +1,13 @@
 #include "mainwindow.h"
 #include "ui_mainwindow.h"
+#include "configscore.h"
 
 MainWindow::MainWindow() : tabWidget(new QTabWidget) // , ui(new Ui::MainWindow)
 {
     setCentralWidget(tabWidget);
+
+    cani = true;
+    changed = false;
 
     currentGroup = -2;
 
@@ -18,8 +22,9 @@ MainWindow::MainWindow() : tabWidget(new QTabWidget) // , ui(new Ui::MainWindow)
     while (query.next())
     {
         QString tmp = query.value(0).toString();
-        if (tmp != "basic") groups->append(tmp);
+        if (tmp != "subs" && tmp != "sqlite_sequence") groups->append(tmp);
     }
+
 
     for (int i = 0; i < groups->size(); ++i)
     {
@@ -38,32 +43,20 @@ MainWindow::MainWindow() : tabWidget(new QTabWidget) // , ui(new Ui::MainWindow)
             t->pphone = q.value(5).toString();
             t->sscore = q.value(6).toString();
             t->perf = q.value(7).toString();
+            t->bdate = q.value(8).toString();
             rd[i].append(t);
         }
 
     }
-    // qDebug() << rd[0].at(0)->name;
-    /*
-    query.exec("SELECT _id, fio, phone, email FROM basic");
-
-    while (query.next())
-    {
-        QString _id = query.value(0).toString();
-        QString fio = query.value(1).toString();
-        QString phone = query.value(2).toString();
-        QString email = query.value(3).toString();
-        qDebug() << _id << fio << phone << email;
-    }
-    */
 
     tlist = new QList<QTableWidget*>;
     nlist = new QList<QString>;
 
     QTableWidget *table;
     table = new QTableWidget;
-    table -> setColumnCount(4);
+    table -> setColumnCount(5);
     table -> setRowCount(0);
-    table -> setHorizontalHeaderLabels(QList<QString> {"ФИО", "Дата рождения", "Телефон", "Баллы ЕГЭ"});
+    table -> setHorizontalHeaderLabels(QList<QString> {"ФИО", "Дата рождения", "Телефон", "E-Mail", "Баллы ЕГЭ"});
     tlist->append(table);
     nlist->append("Базовая информация");
 
@@ -97,6 +90,24 @@ MainWindow::MainWindow() : tabWidget(new QTabWidget) // , ui(new Ui::MainWindow)
 
 MainWindow::~MainWindow()
 {
+    db.close();
+    qDebug() << "destructor";
+}
+
+void MainWindow::closeEvent(QCloseEvent *e)  // show prompt when user wants to close app
+{
+    if (changed)
+    {
+        QMessageBox::StandardButton reply;
+        reply = QMessageBox::question(this, "Выход", "Вы уверены, что хотите выйти?\n"
+                                            "Все измененные данные будут утерены.", QMessageBox::Yes|QMessageBox::Cancel);
+        if (reply == QMessageBox::Yes)
+        {
+            e->accept();
+        } else {
+            e->ignore();
+        }
+    }
 
 }
 
@@ -131,7 +142,7 @@ void MainWindow::createActions()
 
     saveAct = new QAction(this->style()->standardIcon(QStyle::SP_DialogSaveButton) ,tr("Сохранить изменения"), this);
     saveAct->setShortcut(QKeySequence::Save);
-    // TODO
+    connect(saveAct, &QAction::triggered, this, &MainWindow::saveDbSlot);
 
     addStudent = new QAction(this->style()->standardIcon(QStyle::SP_DialogYesButton) ,tr("Добавить студента"), this);
     addStudent->setShortcut(QKeySequence("Ctrl+T"));
@@ -143,7 +154,7 @@ void MainWindow::createActions()
 
     configScore = new QAction(this->style()->standardIcon(QStyle::SP_CommandLink) ,tr("Настроить предметы"), this);
     configScore->setShortcut(QKeySequence("Ctrl+C"));
-    // TODO
+    connect(configScore, &QAction::triggered, this, &MainWindow::configureteScoreSlot);
 
     // Toolbars
     QList<QAction*> toolbarActionList1 = {newAct, openAct, saveAct};
@@ -166,9 +177,42 @@ void MainWindow::groupSelected()
     }
 }
 
+void MainWindow::updateSubs(QStringList rsubs)
+{
+    // for ( const auto& i : rsubs  ) qDebug() << i;
+    setSubs(rsubs);
+}
+
+QStringList MainWindow::getSubs()
+{
+    QStringList subs;
+    QSqlQuery q;
+    q.exec("SELECT plain FROM subs;");
+    while (q.next()) subs << q.value(0).toString();
+    return subs;
+}
+
+void MainWindow::setSubs(QStringList subs)
+{
+    QSqlQuery q;
+    q.exec("DELETE FROM subs;");
+
+    for ( const auto& x : subs  ) {
+        QSqlQuery q2;
+        q2.prepare("INSERT INTO subs (plain) VALUES (:val)");
+        q2.bindValue(":val", x);
+        q2.exec();
+    }
+}
+
 void MainWindow::configureteScoreSlot()
 {
-    // TODO
+    QStringList subs;
+    subs = getSubs();
+    ConfigScore *csw = new ConfigScore(subs, this);
+    connect(csw, SIGNAL(sigSubListUpdate(QStringList)), this, SLOT(updateSubs(QStringList)));
+    csw->setModal(true);
+    csw->exec();
 }
 
 void MainWindow::exitApplicationSlot()
@@ -212,10 +256,88 @@ void MainWindow::addStudentSlot()
     }
 }
 
-void MainWindow::mcChanged(int x, int y){
+void MainWindow::saveDbSlot()
+{
+    int total = 0;
+    for (int g = 0; g < rd.size(); g++) total += rd[g].size();
+    qDebug() << total;
 
-    qDebug() << x;
-    qDebug() << y;
+    for (int g = 0; g < rd.size(); g++)
+    {
+        for (int p = 0; p < rd[g].size(); p++)
+        {
+            // TODO
+            QString sq = "UPDATE ':table' "
+                         "SET "
+                         "phone = ':phone', "
+                         "email = ':email', "
+                         "pname = ':pname', "
+                         "pphone = ':pphone', "
+                         "sscore = ':sscore', "
+                         "perf = ':perf', "
+                         "bdate = ':bdate' "
+                         "WHERE name = ':who';";
+            sq.replace(":table", groups->at(g));
+            sq.replace(":who", rd[g][p]->name);
+            sq.replace(":phone", rd[g][p]->phone);
+            sq.replace(":email", rd[g][p]->email);
+            sq.replace(":pname", rd[g][p]->pname);
+            sq.replace(":pphone", rd[g][p]->pphone);
+            sq.replace(":sscore", rd[g][p]->sscore);
+            sq.replace(":perf", rd[g][p]->perf);
+            sq.replace(":bdate", rd[g][p]->bdate);
+            QSqlQuery q;
+            bool ok = q.exec(sq);
+            if (!ok) {
+                // TODO error
+            }
+        }
+    }
+    changed = false;
+}
+
+void MainWindow::mcChanged(int x, int y)
+{
+    if (!cani) return;
+    QString t = tlist->at(tabWidget->currentIndex())->item(x, y)->text();
+    QString c = tlist->at(tabWidget->currentIndex())->horizontalHeaderItem(y)->text();
+    QStringList crutch;
+    crutch << "Дата рождения" << "Телефон" << "E-Mail" << "Баллы ЕГЭ" << "ФИО Родителя" << "Телефон родителя";
+    switch (crutch.indexOf(c)) {
+    case 0:
+    {
+        rd[currentGroup][x]->bdate = t;
+        break;
+    }
+    case 1:
+    {
+        rd[currentGroup][x]->phone = t;
+        break;
+    }
+    case 2:
+    {
+        rd[currentGroup][x]->email = t;
+        break;
+    }
+    case 3:
+    {
+        rd[currentGroup][x]->sscore = t;
+        break;
+    }
+    case 4:
+    {
+        rd[currentGroup][x]->pname = t;
+        break;
+    }
+    case 5:
+    {
+        rd[currentGroup][x]->pphone = t;
+        break;
+    }
+    default:
+        return;
+    }
+    changed = true;
 }
 
 void MainWindow::createMenus()
@@ -231,14 +353,16 @@ void MainWindow::createMenus()
 
 void MainWindow::updateData(int group)
 {
+    cani = false;
     tlist->at(0)->setRowCount(rd[group].size());
     for (int i = 0; i < rd[group].size(); ++i)
     {
         tlist->at(0)->setItem(i, 0, new QTableWidgetItem(rd[group].at(i)->name));
         tlist->at(0)->item(i, 0)->setFlags(Qt::ItemIsSelectable|Qt::ItemIsEnabled);
-        tlist->at(0)->setItem(i, 1, new QTableWidgetItem(rd[group].at(i)->phone));
-        tlist->at(0)->setItem(i, 2, new QTableWidgetItem(rd[group].at(i)->email));
-        tlist->at(0)->setItem(i, 3, new QTableWidgetItem(rd[group].at(i)->sscore));
+        tlist->at(0)->setItem(i, 1, new QTableWidgetItem(rd[group].at(i)->bdate));
+        tlist->at(0)->setItem(i, 2, new QTableWidgetItem(rd[group].at(i)->phone));
+        tlist->at(0)->setItem(i, 3, new QTableWidgetItem(rd[group].at(i)->email));
+        tlist->at(0)->setItem(i, 4, new QTableWidgetItem(rd[group].at(i)->sscore));
     }
     tlist->at(0)->resizeColumnsToContents();
 
@@ -251,6 +375,6 @@ void MainWindow::updateData(int group)
         tlist->at(1)->setItem(i, 2, new QTableWidgetItem(rd[group].at(i)->pphone));
     }
     tlist->at(1)->resizeColumnsToContents();
-
+    cani = true;
 }
 

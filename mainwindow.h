@@ -15,6 +15,7 @@
 #include <QStyle>
 #include <QInputDialog>
 #include <QMessageBox>
+#include <QCloseEvent>
 
 #include <QtSql>
 
@@ -31,11 +32,15 @@ public:
     ~MainWindow();
     void updateData(int);
 
+public slots:
+    void updateSubs(QStringList);
+
 private slots:
     void groupSelected();
     void addStudentSlot();
     void exitApplicationSlot();
     void configureteScoreSlot();
+    void saveDbSlot();
     void mcChanged(int, int);
 
 private:
@@ -47,6 +52,7 @@ private:
         QString pphone;
         QString sscore;
         QString perf;
+        QString bdate;
     };
 
     QMenu *fileMenu;
@@ -71,8 +77,14 @@ private:
     void createDockWindow();
     void createActions();
     void createMenus();
+    void closeEvent(QCloseEvent*);
+
+    QStringList getSubs();
+    void setSubs(QStringList);
 
     int currentGroup;
+    bool cani;
+    bool changed;
 
     QSqlDatabase db;
 
