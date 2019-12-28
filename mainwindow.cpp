@@ -5,85 +5,20 @@
 MainWindow::MainWindow() : tabWidget(new QTabWidget) // , ui(new Ui::MainWindow)
 {
     setCentralWidget(tabWidget);
-
-    cani = true;
+    db = QSqlDatabase::addDatabase("QSQLITE");
+    cani = true; // sync
     changed = false;
-
     currentGroup = -2;
 
-    db = QSqlDatabase::addDatabase("QSQLITE");
-    db.setDatabaseName("C:\\Users\\Fumycat\\Desktop\\sqlite3.db");
-    db.open();
+    // QDockWidget
+    dock = new QDockWidget("Группы", this);
+    dock->setAllowedAreas(Qt::LeftDockWidgetArea | Qt::RightDockWidgetArea);
+    groupsList = new QListWidget(dock);
+    dock->setWidget(groupsList);
+    addDockWidget(Qt::RightDockWidgetArea, dock);
+    connect(groupsList, &QListWidget::itemSelectionChanged, this, &MainWindow::groupSelected);
 
-
-    QSqlQuery query;
-    query.exec("SELECT name FROM sqlite_master WHERE type='table' ORDER BY name;");
-    groups = new QList<QString>;
-    while (query.next())
-    {
-        QString tmp = query.value(0).toString();
-        if (tmp != "subs" && tmp != "sqlite_sequence") groups->append(tmp);
-    }
-
-
-    for (int i = 0; i < groups->size(); ++i)
-    {
-        // qDebug() << QString("SELECT * FROM \"%1\";").arg(groups->at(i));
-        rd.append(QList<r*>());
-        QSqlQuery q;
-        q.exec(QString("SELECT * FROM \"%1\";").arg(groups->at(i)));
-
-        while (q.next())
-        {
-            struct r *t = new r;
-            t->name = q.value(1).toString();
-            t->phone = q.value(2).toString();
-            t->email = q.value(3).toString();
-            t->pname = q.value(4).toString();
-            t->pphone = q.value(5).toString();
-            t->sscore = q.value(6).toString();
-            t->perf = q.value(7).toString();
-            t->bdate = q.value(8).toString();
-            rd[i].append(t);
-        }
-
-    }
-
-    tlist = new QList<QTableWidget*>;
-    nlist = new QList<QString>;
-
-    QTableWidget *table;
-    table = new QTableWidget;
-    table -> setColumnCount(5);
-    table -> setRowCount(0);
-    table -> setHorizontalHeaderLabels(QList<QString> {"ФИО", "Дата рождения", "Телефон", "E-Mail", "Баллы ЕГЭ"});
-    tlist->append(table);
-    nlist->append("Базовая информация");
-
-    QTableWidget *table2;
-    table2 = new QTableWidget;
-    table2 -> setColumnCount(3);
-    table2 -> setRowCount(0);
-    table2 -> setHorizontalHeaderLabels(QList<QString> {"ФИО", "ФИО Родителя", "Телефон родителя"});
-    tlist->append(table2);
-    nlist->append("О Родителях");
-
-    QTableWidget *table3;
-    table3 = new QTableWidget;
-    table3 -> setColumnCount(0);
-    table3 -> setRowCount(0);
-    table3 -> setHorizontalHeaderLabels(QList<QString> {"ФИО", "ФИО Родителя", "Телефон родителя"});
-    tlist->append(table3);
-    nlist->append("Успеваемость");
-
-    for (int i = 0; i < nlist->size(); i++) {
-        tabWidget->insertTab(i, tlist->at(i), nlist->at(i));
-        connect(tlist->at(i), &QTableWidget::cellChanged, this, &MainWindow::mcChanged);
-    }
-
-    if (groups->size() != 0) currentGroup = -1;
-
-    createDockWindow();
+    createTabs();
     createActions();
     createMenus();
 }
@@ -91,10 +26,9 @@ MainWindow::MainWindow() : tabWidget(new QTabWidget) // , ui(new Ui::MainWindow)
 MainWindow::~MainWindow()
 {
     db.close();
-    qDebug() << "destructor";
 }
 
-void MainWindow::closeEvent(QCloseEvent *e)  // show prompt when user wants to close app
+void MainWindow::closeEvent(QCloseEvent *e)
 {
     if (changed)
     {
@@ -111,17 +45,98 @@ void MainWindow::closeEvent(QCloseEvent *e)  // show prompt when user wants to c
 
 }
 
+void MainWindow::createTabs()
+{
+    tlist = new QList<QTableWidget*>;
+    QStringList nlist = {"Базовая информация", "О Родителях", "Успеваемость"};
+
+    QTableWidget *table;
+    table = new QTableWidget;
+    table -> setColumnCount(5);
+    table -> setRowCount(0);
+    table -> setHorizontalHeaderLabels(QList<QString> {"ФИО", "Дата рождения", "Телефон", "E-Mail", "Баллы ЕГЭ"});
+    tlist->append(table);
+
+    QTableWidget *table2;
+    table2 = new QTableWidget;
+    table2 -> setColumnCount(3);
+    table2 -> setRowCount(0);
+    table2 -> setHorizontalHeaderLabels(QList<QString> {"ФИО", "ФИО Родителя", "Телефон родителя"});
+    tlist->append(table2);
+
+    QTableWidget *table3;
+    table3 = new QTableWidget;
+    table3 -> setColumnCount(0);
+    table3 -> setRowCount(0);
+    table3 -> setHorizontalHeaderLabels(QList<QString> {"ФИО", "ФИО Родителя", "Телефон родителя"});
+    tlist->append(table3);
+
+    for (int i = 0; i < nlist.size(); i++) {
+        tabWidget->insertTab(i, tlist->at(i), nlist.at(i));
+        connect(tlist->at(i), &QTableWidget::cellChanged, this, &MainWindow::mcChanged);
+    }
+}
+
 void MainWindow::createDockWindow()
 {
-    QDockWidget *dock = new QDockWidget("Группы", this);
-    dock->setAllowedAreas(Qt::LeftDockWidgetArea | Qt::RightDockWidgetArea);
-    groupsList = new QListWidget(dock);
-    for (int i = 0; i < groups->size(); ++i) groupsList->addItem(groups->at(i));
-    dock->setWidget(groupsList);
-    addDockWidget(Qt::RightDockWidgetArea, dock);
-//    viewMenu->addAction(dock->toggleViewAction());
+    // viewMenu->addAction(dock->toggleViewAction());
+}
 
+void MainWindow::openFileSlot()
+{
+    QString fileName = QFileDialog::getOpenFileName(this,
+        tr("Open database"), "", tr("SQLite3 database files (*.db);;SQLite3 database files(*)"));
+    if (fileName == "") return;
+    if ( db.isOpen() ) db.close();
+    db.setDatabaseName(fileName);
+    db.open();
+
+    QSqlQuery query;
+    query.exec("SELECT name FROM sqlite_master WHERE type='table' ORDER BY name;");
+    groups.clear();
+
+    while (query.next())
+    {
+        QString tmp = query.value(0).toString();
+        if (tmp != "subs" && tmp != "sqlite_sequence") groups.append(tmp);
+    }
+    if (groups.size() != 0) currentGroup = -1;
+
+    groupsList->disconnect();
+    delete groupsList;
+    groupsList = new QListWidget(dock);
+    groupsList->addItems(groups);
+    dock->setWidget(groupsList);
     connect(groupsList, &QListWidget::itemSelectionChanged, this, &MainWindow::groupSelected);
+
+    rd.clear();
+    for (int i = 0; i < groups.size(); i++)
+    {
+        rd.append(QList<r*>());
+        QSqlQuery q;
+        q.exec(QString("SELECT * FROM \"%1\";").arg(groups.at(i)));
+        while (q.next())
+        {
+            struct r *t = new r;
+            t->name = q.value(0).toString();
+            t->phone = q.value(1).toString();
+            t->email = q.value(2).toString();
+            t->pname = q.value(3).toString();
+            t->pphone = q.value(4).toString();
+            t->sscore = q.value(5).toString();
+            t->perf = q.value(6).toString();
+            t->bdate = q.value(7).toString();
+            rd[i].append(t);
+        }
+    }
+    if (groupsList->count() > 0)
+    {
+        groupsList->setCurrentRow(0);
+        currentGroup = 0;
+    } else {
+        for (int i = 0; i < 3; i++) tlist->at(i)->setRowCount(0);
+        currentGroup = -1;
+    }
 }
 
 // connect(newAct, &QAction::triggered, this, &MainWindow::newFile);
@@ -138,7 +153,7 @@ void MainWindow::createActions()
 
     openAct = new QAction(this->style()->standardIcon(QStyle::SP_DirOpenIcon) ,tr("Открыть базу данных..."), this);
     openAct->setShortcuts(QKeySequence::Open);
-    // TODO
+    connect(openAct, &QAction::triggered, this, &MainWindow::openFileSlot);
 
     saveAct = new QAction(this->style()->standardIcon(QStyle::SP_DialogSaveButton) ,tr("Сохранить изменения"), this);
     saveAct->setShortcut(QKeySequence::Save);
@@ -169,8 +184,8 @@ void MainWindow::createActions()
 void MainWindow::groupSelected()
 {
     QListWidgetItem *item = this->groupsList->selectedItems()[0];
-    for (int i = 0; i < groups->size(); ++i){
-        if (groups->at(i) == item->text()) {
+    for (int i = 0; i < groups.size(); ++i){
+        if (groups.at(i) == item->text()) {
             updateData(i);
             currentGroup = i;
         }
@@ -266,7 +281,20 @@ void MainWindow::saveDbSlot()
     {
         for (int p = 0; p < rd[g].size(); p++)
         {
-            // TODO
+            QString x = "INSERT OR IGNORE INTO ':table' "
+                        "VALUES (':name', ':phone', ':email', ':pname', ':pphone', ':sscore', ':perf', ':bdate');";
+            x.replace(":table", groups.at(g));
+            x.replace(":name", rd[g][p]->name);
+            x.replace(":phone", rd[g][p]->phone);
+            x.replace(":email", rd[g][p]->email);
+            x.replace(":pname", rd[g][p]->pname);
+            x.replace(":pphone", rd[g][p]->pphone);
+            x.replace(":sscore", rd[g][p]->sscore);
+            x.replace(":perf", rd[g][p]->perf);
+            x.replace(":bdate", rd[g][p]->bdate);
+            QSqlQuery qx;
+            // qDebug() << qx.exec(x);
+            // qDebug() << qx.lastQuery();
             QString sq = "UPDATE ':table' "
                          "SET "
                          "phone = ':phone', "
@@ -277,7 +305,7 @@ void MainWindow::saveDbSlot()
                          "perf = ':perf', "
                          "bdate = ':bdate' "
                          "WHERE name = ':who';";
-            sq.replace(":table", groups->at(g));
+            sq.replace(":table", groups.at(g));
             sq.replace(":who", rd[g][p]->name);
             sq.replace(":phone", rd[g][p]->phone);
             sq.replace(":email", rd[g][p]->email);
@@ -289,7 +317,7 @@ void MainWindow::saveDbSlot()
             QSqlQuery q;
             bool ok = q.exec(sq);
             if (!ok) {
-                // TODO error
+                qDebug() << "error " << rd[g][p]->name;
             }
         }
     }

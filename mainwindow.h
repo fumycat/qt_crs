@@ -37,11 +37,12 @@ public slots:
 
 private slots:
     void groupSelected();
+    void mcChanged(int, int);
     void addStudentSlot();
     void exitApplicationSlot();
+    void openFileSlot();
     void configureteScoreSlot();
     void saveDbSlot();
-    void mcChanged(int, int);
 
 private:
     struct r {
@@ -74,6 +75,7 @@ private:
     QAction *aboutAct;
     QAction *aboutQtAct;
 
+    void createTabs();
     void createDockWindow();
     void createActions();
     void createMenus();
@@ -90,11 +92,11 @@ private:
 
     QTabWidget *tabWidget;
     QListWidget *groupsList;
+    QDockWidget *dock;
 
     QList<QTableWidget*> *tlist;
-    QList<QString> *nlist;
 
-    QList<QString> *groups;
+    QStringList groups;
 
     QList< QList<r*> > rd;
 };
