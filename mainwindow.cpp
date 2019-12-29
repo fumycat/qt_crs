@@ -157,6 +157,22 @@ void MainWindow::openFileSlot()
     }
 }
 
+void MainWindow::aboutSlot()
+{
+    QMessageBox::about(this, "О программе", "Электронный журнал куратора\n\nАвтор: Логинов В.С.\n2019г.");
+}
+
+void MainWindow::aboutQtSlot()
+{
+    QMessageBox::about(this, "О Qt", "Qt — кроссплатформенный фреймворк для разработки программного обеспечения на языке программирования C++.\nВерсия Qt: " + QString(QT_VERSION_STR));
+}
+
+void MainWindow::helpSlot()
+{
+
+}
+
+
 void MainWindow::createActions()
 {
     exitAct = new QAction(this->style()->standardIcon(QStyle::SP_DialogNoButton), tr("Выход"), this);
@@ -193,13 +209,13 @@ void MainWindow::createActions()
 
     helpAct = new QAction(this->style()->standardIcon(QStyle::SP_TitleBarContextHelpButton) ,tr("Помощь..."), this);
     helpAct->setShortcut(QKeySequence("Ctrl+H"));
-    // TODO
+    connect(helpAct, &QAction::triggered, this, &MainWindow::helpSlot);
 
     aboutAct = new QAction(this->style()->standardIcon(QStyle::SP_MessageBoxInformation) ,tr("О программе..."), this);
-    // TODO
+    connect(aboutAct, &QAction::triggered, this, &MainWindow::aboutSlot);
 
     aboutQtAct = new QAction(this->style()->standardIcon(QStyle::SP_DesktopIcon) ,tr("О QT..."), this);
-    //TODO
+    connect(aboutQtAct, &QAction::triggered, this, &MainWindow::aboutQtSlot);
 
     QList<QAction*> toolbarActionList1 = {newAct, openAct, saveAct};
     QToolBar *fileToolBar1 = addToolBar(tr("Панель работы с файлами"));

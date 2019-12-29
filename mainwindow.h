@@ -45,6 +45,9 @@ private slots:
     void newFileSlot();
     void configureteScoreSlot();
     void saveDbSlot();
+    void aboutSlot();
+    void aboutQtSlot();
+    void helpSlot();
 
 private:
     struct r {

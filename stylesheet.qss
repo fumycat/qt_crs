@@ -20,8 +20,26 @@ QTableView {
     selection-color: darkred;
 }
 
-QPushButton:focus {
-    border-width: 1px;
-    border-color: #1e1e1e;
-    border-style: solid;
+QPushButton {
+    border: 1px solid darkred;
+    spacing: 3px;
+    min-width: 70px;
+    min-height: 20px;
+}
+
+QPushButton:pressed {
+    background-color: qlineargradient(x1: 0, y1: 0, x2: 0, y2: 1, stop: 0 #dadbde, stop: 1 #f6f7fa);
+}
+
+QPushButton:default {
+    border-color: blue;
+}
+
+QListView::item:selected {
+    color: darkred;
+    background: lightgray;
+}
+
+QListView::item:hover {
+    background: lightgray;
 }
