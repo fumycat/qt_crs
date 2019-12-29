@@ -76,7 +76,6 @@ private:
     QAction *aboutQtAct;
 
     void createTabs();
-    void createDockWindow();
     void createActions();
     void createMenus();
     void closeEvent(QCloseEvent*);

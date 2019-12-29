@@ -1,0 +1,27 @@
+QMenuBar, QTabBar::tab, QMenu, QMenu::item {
+    background: lightgray;
+}
+
+QMenuBar::item:selected, QMenuBar::item:pressed, QTabBar::tab:selected, QTabBar::tab:hover, QMenu::item:selected, QToolButton::hover {
+    background: gray;
+}
+
+QMenu::item:selected  {
+    color: black;
+}
+
+QMenu::item:selected:disabled  {
+    color: gray;
+}
+
+QTableView {
+    selection-background-color: lightgray;
+    color: black;
+    selection-color: darkred;
+}
+
+QPushButton:focus {
+    border-width: 1px;
+    border-color: #1e1e1e;
+    border-style: solid;
+}

@@ -11,7 +11,6 @@ MainWindow::MainWindow() : tabWidget(new QTabWidget) // , ui(new Ui::MainWindow)
     changed = false;
     currentGroup = -2;
 
-    // QDockWidget
     dock = new QDockWidget("Группы", this);
     dock->setAllowedAreas(Qt::LeftDockWidgetArea | Qt::RightDockWidgetArea);
     groupsList = new QListWidget(dock);
@@ -76,11 +75,6 @@ void MainWindow::createTabs()
         tabWidget->insertTab(i, tlist->at(i), nlist.at(i));
         connect(tlist->at(i), &QTableWidget::cellChanged, this, &MainWindow::mcChanged);
     }
-}
-
-void MainWindow::createDockWindow()
-{
-    // viewMenu->addAction(dock->toggleViewAction());
 }
 
 void MainWindow::newFileSlot()
@@ -165,7 +159,6 @@ void MainWindow::openFileSlot()
 
 void MainWindow::createActions()
 {
-    // Actions
     exitAct = new QAction(this->style()->standardIcon(QStyle::SP_DialogNoButton), tr("Выход"), this);
     exitAct->setShortcut(QKeySequence("Ctrl+Q"));
     connect(exitAct, &QAction::triggered, this, &MainWindow::exitApplicationSlot);
@@ -208,7 +201,6 @@ void MainWindow::createActions()
     aboutQtAct = new QAction(this->style()->standardIcon(QStyle::SP_DesktopIcon) ,tr("О QT..."), this);
     //TODO
 
-    // Toolbars
     QList<QAction*> toolbarActionList1 = {newAct, openAct, saveAct};
     QToolBar *fileToolBar1 = addToolBar(tr("Панель работы с файлами"));
     fileToolBar1->addActions(toolbarActionList1);
@@ -231,7 +223,6 @@ void MainWindow::groupSelected()
 
 void MainWindow::updateSubs(QStringList rsubs)
 {
-    // for ( const auto& i : rsubs  ) qDebug() << i;
     setSubs(rsubs);
     for (int i = 0; i < groups.size(); i++)
     {
@@ -375,7 +366,6 @@ void MainWindow::saveDbSlot()
             x.replace(":bdate", rd[g][p]->bdate);
             QSqlQuery qx;
             qx.exec(x);
-            // qDebug() << qx.lastQuery();
             QString sq = "UPDATE ':table' "
                          "SET "
                          "phone = ':phone', "
@@ -396,10 +386,7 @@ void MainWindow::saveDbSlot()
             sq.replace(":perf", rd[g][p]->perf);
             sq.replace(":bdate", rd[g][p]->bdate);
             QSqlQuery q;
-            bool ok = q.exec(sq);
-            if (!ok) {
-                // qDebug() << "error " << rd[g][p]->name;
-            }
+            q.exec(sq);
         }
     }
     changed = false;
@@ -411,10 +398,8 @@ QStringList MainWindow::getPerfs(QString perfStr)
     {
         QStringList strLst;
         for (int i = 0; i < getSubs().size(); i++) {strLst << " ";}
-        // qDebug() << "suc " << strLst;
         return strLst;
     } else {
-        // qDebug() << "suc " << perfStr.split(",");
         return perfStr.split(",");
     }
 }
@@ -426,7 +411,6 @@ void MainWindow::mcChanged(int x, int y)
     {
         QStringList perfStr;
         for (int i = 1; i < tlist->at(2)->columnCount(); i++) {
-            qDebug() << tlist->at(2)->item(x, i)->text();
             QString t = tlist->at(2)->item(x, i)->text();
             if (t == "") t = " ";
             perfStr.append(t);
