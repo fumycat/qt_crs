@@ -1,6 +1,7 @@
 #include "mainwindow.h"
 #include "ui_mainwindow.h"
 #include "configscore.h"
+#include "helpbrowser.h"
 
 MainWindow::MainWindow() : tabWidget(new QTabWidget) // , ui(new Ui::MainWindow)
 {
@@ -169,7 +170,10 @@ void MainWindow::aboutQtSlot()
 
 void MainWindow::helpSlot()
 {
-
+    HelpBrowser *helpBrowser = new HelpBrowser("qrc:/", "qrc:/Scripts.htm");
+    helpBrowser -> setWindowTitle("Помощь");
+    helpBrowser -> resize(600, 350);
+    helpBrowser -> show();
 }
 
 

@@ -27,11 +27,13 @@ CONFIG += c++11
 SOURCES += \
         main.cpp \
         mainwindow.cpp \
-    configscore.cpp
+    configscore.cpp \
+    helpbrowser.cpp
 
 HEADERS += \
         mainwindow.h \
-    configscore.h
+    configscore.h \
+    helpbrowser.h
 
 FORMS += \
         mainwindow.ui \
@@ -42,5 +44,4 @@ qnx: target.path = /tmp/$${TARGET}/bin
 else: unix:!android: target.path = /opt/$${TARGET}/bin
 !isEmpty(target.path): INSTALLS += target
 
-RESOURCES += \
-    stylesheet.qss
+RESOURCES += stylesheet.qss Scripts.htm Program.htm
