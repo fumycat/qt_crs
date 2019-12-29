@@ -59,14 +59,12 @@ private:
     };
 
     QMenu *fileMenu;
-    QMenu *editMenu;
-    QMenu *formatMenu;
+    QMenu *toolsMenu;
     QMenu *helpMenu;
 
     QAction *newAct;
     QAction *openAct;
     QAction *saveAct;
-    QAction *printAct;
     QAction *exitAct;
 
     QAction *addGroup;

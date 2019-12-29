@@ -95,6 +95,10 @@ void MainWindow::newFileSlot()
     db.open();
     QSqlQuery query;
     query.exec("CREATE TABLE 'subs' ('plain' TEXT)");
+    saveAct->setEnabled(true);
+    addGroup->setEnabled(true);
+    addStudent->setEnabled(true);
+    configScore->setEnabled(true);
 }
 
 void MainWindow::openFileSlot()
@@ -146,6 +150,9 @@ void MainWindow::openFileSlot()
         }
     }
     saveAct->setEnabled(true);
+    addGroup->setEnabled(true);
+    addStudent->setEnabled(true);
+    configScore->setEnabled(true);
     if (groupsList->count() > 0)
     {
         groupsList->setCurrentRow(0);
@@ -156,7 +163,6 @@ void MainWindow::openFileSlot()
     }
 }
 
-// connect(newAct, &QAction::triggered, this, &MainWindow::newFile);
 void MainWindow::createActions()
 {
     // Actions
@@ -179,15 +185,28 @@ void MainWindow::createActions()
 
     addStudent = new QAction(this->style()->standardIcon(QStyle::SP_DialogYesButton) ,tr("Добавить студента"), this);
     addStudent->setShortcut(QKeySequence("Ctrl+T"));
+    addStudent->setEnabled(false);
     connect(addStudent, &QAction::triggered, this, &MainWindow::addStudentSlot);
 
     addGroup = new QAction(this->style()->standardIcon(QStyle::SP_FileDialogNewFolder) ,tr("Добавить группу"), this);
     addGroup->setShortcut(QKeySequence("Ctrl+G"));
+    addGroup->setEnabled(false);
     connect(addGroup, &QAction::triggered, this, &MainWindow::addGroupSlot);
 
     configScore = new QAction(this->style()->standardIcon(QStyle::SP_CommandLink) ,tr("Настроить предметы"), this);
     configScore->setShortcut(QKeySequence("Ctrl+C"));
+    configScore->setEnabled(false);
     connect(configScore, &QAction::triggered, this, &MainWindow::configureteScoreSlot);
+
+    helpAct = new QAction(this->style()->standardIcon(QStyle::SP_TitleBarContextHelpButton) ,tr("Помощь..."), this);
+    helpAct->setShortcut(QKeySequence("Ctrl+H"));
+    // TODO
+
+    aboutAct = new QAction(this->style()->standardIcon(QStyle::SP_MessageBoxInformation) ,tr("О программе..."), this);
+    // TODO
+
+    aboutQtAct = new QAction(this->style()->standardIcon(QStyle::SP_DesktopIcon) ,tr("О QT..."), this);
+    //TODO
 
     // Toolbars
     QList<QAction*> toolbarActionList1 = {newAct, openAct, saveAct};
@@ -460,13 +479,24 @@ void MainWindow::mcChanged(int x, int y)
 
 void MainWindow::createMenus()
 {
-    fileMenu = menuBar()->addMenu(tr("&Файл"));
+    fileMenu = menuBar()->addMenu(tr("Файл"));
     fileMenu->addAction(newAct);
     fileMenu->addAction(openAct);
     fileMenu->addAction(saveAct);
-//    fileMenu->addAction(printAct);
     fileMenu->addSeparator();
     fileMenu->addAction(exitAct);
+
+    toolsMenu = menuBar()->addMenu(tr("Инструменты"));
+    toolsMenu->addAction(addGroup);
+    toolsMenu->addAction(addStudent);
+    toolsMenu->addAction(configScore);
+    toolsMenu->addSeparator();
+    toolsMenu->addAction(dock->toggleViewAction());
+
+    helpMenu = menuBar()->addMenu(tr("Помощь"));
+    helpMenu->addAction(helpAct);
+    helpMenu->addAction(aboutAct);
+    helpMenu->addAction(aboutQtAct);
 }
 
 void MainWindow::updateData(int group)
