@@ -5,6 +5,7 @@
 MainWindow::MainWindow() : tabWidget(new QTabWidget) // , ui(new Ui::MainWindow)
 {
     setCentralWidget(tabWidget);
+    setWindowTitle("Журнал");
     db = QSqlDatabase::addDatabase("QSQLITE");
     cani = true; // sync
     changed = false;
@@ -82,11 +83,26 @@ void MainWindow::createDockWindow()
     // viewMenu->addAction(dock->toggleViewAction());
 }
 
+void MainWindow::newFileSlot()
+{
+    QString fileName = QFileDialog::getSaveFileName(this, tr("Создание новой базы данных"),
+                               "new.db",
+                               tr("SQLite3 database files (*.db)"));
+    if (fileName == "") return;
+    setWindowTitle("Журнал - " + fileName);
+    if ( db.isOpen() ) db.close();
+    db.setDatabaseName(fileName);
+    db.open();
+    QSqlQuery query;
+    query.exec("CREATE TABLE 'subs' ('plain' TEXT)");
+}
+
 void MainWindow::openFileSlot()
 {
     QString fileName = QFileDialog::getOpenFileName(this,
         tr("Open database"), "", tr("SQLite3 database files (*.db);;SQLite3 database files(*)"));
     if (fileName == "") return;
+    setWindowTitle("Журнал - " + fileName);
     if ( db.isOpen() ) db.close();
     db.setDatabaseName(fileName);
     db.open();
@@ -129,6 +145,7 @@ void MainWindow::openFileSlot()
             rd[i].append(t);
         }
     }
+    saveAct->setEnabled(true);
     if (groupsList->count() > 0)
     {
         groupsList->setCurrentRow(0);
@@ -149,7 +166,7 @@ void MainWindow::createActions()
 
     newAct = new QAction(this->style()->standardIcon(QStyle::SP_FileIcon), tr("Новая база данных..."), this);
     newAct->setShortcuts(QKeySequence::New);
-    // TODO
+    connect(newAct, &QAction::triggered, this, &MainWindow::newFileSlot);
 
     openAct = new QAction(this->style()->standardIcon(QStyle::SP_DirOpenIcon) ,tr("Открыть базу данных..."), this);
     openAct->setShortcuts(QKeySequence::Open);
@@ -157,6 +174,7 @@ void MainWindow::createActions()
 
     saveAct = new QAction(this->style()->standardIcon(QStyle::SP_DialogSaveButton) ,tr("Сохранить изменения"), this);
     saveAct->setShortcut(QKeySequence::Save);
+    saveAct->setEnabled(false);
     connect(saveAct, &QAction::triggered, this, &MainWindow::saveDbSlot);
 
     addStudent = new QAction(this->style()->standardIcon(QStyle::SP_DialogYesButton) ,tr("Добавить студента"), this);
@@ -165,7 +183,7 @@ void MainWindow::createActions()
 
     addGroup = new QAction(this->style()->standardIcon(QStyle::SP_FileDialogNewFolder) ,tr("Добавить группу"), this);
     addGroup->setShortcut(QKeySequence("Ctrl+G"));
-    // TODO
+    connect(addGroup, &QAction::triggered, this, &MainWindow::addGroupSlot);
 
     configScore = new QAction(this->style()->standardIcon(QStyle::SP_CommandLink) ,tr("Настроить предметы"), this);
     configScore->setShortcut(QKeySequence("Ctrl+C"));
@@ -196,6 +214,14 @@ void MainWindow::updateSubs(QStringList rsubs)
 {
     // for ( const auto& i : rsubs  ) qDebug() << i;
     setSubs(rsubs);
+    for (int i = 0; i < groups.size(); i++)
+    {
+        for (int j = 0; j < rd[i].size(); j++)
+        {
+            rd[i][j]->perf = "";
+        }
+    }
+    updateData(currentGroup);
 }
 
 QStringList MainWindow::getSubs()
@@ -232,7 +258,43 @@ void MainWindow::configureteScoreSlot()
 
 void MainWindow::exitApplicationSlot()
 {
-    QApplication::quit();
+    close();
+}
+
+void MainWindow::addGroupSlot()
+{
+    bool ok;
+    QString text = QInputDialog::getText(this, tr("Добавление группы"), tr("Введите название группы:"), QLineEdit::Normal, "", &ok);
+    if (ok && !text.isEmpty()) {
+        QString qs = "CREATE TABLE ':g' ("
+                     "'name'    TEXT NOT NULL UNIQUE,"
+                     "'phone'   TEXT,"
+                     "'email'   TEXT,"
+                     "'pname'   TEXT,"
+                     "'pphone'  TEXT,"
+                     "'sscore'  TEXT,"
+                     "'perf'    TEXT,"
+                     "'bdate'   TEXT,"
+                     "PRIMARY KEY('name'))";
+        QSqlQuery q;
+        bool exec_ok = q.exec(qs.replace(":g", text));
+        if (exec_ok){
+            groups.append(text);
+
+            groupsList->disconnect();
+            delete groupsList;
+            groupsList = new QListWidget(dock);
+            groupsList->addItems(groups);
+            dock->setWidget(groupsList);
+            connect(groupsList, &QListWidget::itemSelectionChanged, this, &MainWindow::groupSelected);
+
+            rd.append(QList<r*>());
+
+            currentGroup = groups.size() - 1;
+            groupsList->setCurrentRow(currentGroup);
+            updateData(currentGroup);
+        }
+    }
 }
 
 void MainWindow::addStudentSlot()
@@ -293,7 +355,7 @@ void MainWindow::saveDbSlot()
             x.replace(":perf", rd[g][p]->perf);
             x.replace(":bdate", rd[g][p]->bdate);
             QSqlQuery qx;
-            // qDebug() << qx.exec(x);
+            qx.exec(x);
             // qDebug() << qx.lastQuery();
             QString sq = "UPDATE ':table' "
                          "SET "
@@ -317,16 +379,44 @@ void MainWindow::saveDbSlot()
             QSqlQuery q;
             bool ok = q.exec(sq);
             if (!ok) {
-                qDebug() << "error " << rd[g][p]->name;
+                // qDebug() << "error " << rd[g][p]->name;
             }
         }
     }
     changed = false;
 }
 
+QStringList MainWindow::getPerfs(QString perfStr)
+{
+    if (perfStr == "")
+    {
+        QStringList strLst;
+        for (int i = 0; i < getSubs().size(); i++) {strLst << " ";}
+        // qDebug() << "suc " << strLst;
+        return strLst;
+    } else {
+        // qDebug() << "suc " << perfStr.split(",");
+        return perfStr.split(",");
+    }
+}
+
 void MainWindow::mcChanged(int x, int y)
 {
     if (!cani) return;
+    if (tabWidget->currentIndex() == 2)
+    {
+        QStringList perfStr;
+        for (int i = 1; i < tlist->at(2)->columnCount(); i++) {
+            qDebug() << tlist->at(2)->item(x, i)->text();
+            QString t = tlist->at(2)->item(x, i)->text();
+            if (t == "") t = " ";
+            perfStr.append(t);
+        }
+        QString tmp = perfStr.join(",");
+        rd[currentGroup][x]->perf = tmp;
+        changed = true;
+        return;
+    }
     QString t = tlist->at(tabWidget->currentIndex())->item(x, y)->text();
     QString c = tlist->at(tabWidget->currentIndex())->horizontalHeaderItem(y)->text();
     QStringList crutch;
@@ -382,6 +472,7 @@ void MainWindow::createMenus()
 void MainWindow::updateData(int group)
 {
     cani = false;
+    if (rd.size() == 0) return;
     tlist->at(0)->setRowCount(rd[group].size());
     for (int i = 0; i < rd[group].size(); ++i)
     {
@@ -403,6 +494,26 @@ void MainWindow::updateData(int group)
         tlist->at(1)->setItem(i, 2, new QTableWidgetItem(rd[group].at(i)->pphone));
     }
     tlist->at(1)->resizeColumnsToContents();
+
+    QStringList headers;
+    QStringList asubs = getSubs();
+    headers << "ФИО";
+
+    for (int i = 0; i < asubs.size(); i++) headers << asubs.at(i);
+    tlist->at(2)->setColumnCount(headers.size());
+    tlist->at(2)->setRowCount(rd[group].size());
+    tlist->at(2)->setHorizontalHeaderLabels(headers);
+    for (int i = 0; i < rd[group].size(); ++i)
+    {
+        tlist->at(2)->setItem(i, 0, new QTableWidgetItem(rd[group].at(i)->name));
+        tlist->at(2)->item(i, 0)->setFlags(Qt::ItemIsSelectable|Qt::ItemIsEnabled);
+        QStringList perfs = getPerfs(rd[group][i]->perf);
+        for (int j = 1; j < headers.size(); j++)
+        {
+            tlist->at(2)->setItem(i, j, new QTableWidgetItem(perfs.at(j-1)));
+        }
+    }
+    tlist->at(2)->resizeColumnsToContents();
     cani = true;
 }
 

@@ -39,8 +39,10 @@ private slots:
     void groupSelected();
     void mcChanged(int, int);
     void addStudentSlot();
+    void addGroupSlot();
     void exitApplicationSlot();
     void openFileSlot();
+    void newFileSlot();
     void configureteScoreSlot();
     void saveDbSlot();
 
@@ -83,6 +85,7 @@ private:
 
     QStringList getSubs();
     void setSubs(QStringList);
+    QStringList getPerfs(QString);
 
     int currentGroup;
     bool cani;
