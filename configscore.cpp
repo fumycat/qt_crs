@@ -6,6 +6,7 @@ ConfigScore::ConfigScore(QStringList p, QWidget *parent) :
     ui(new Ui::ConfigScore)
 {
     ui->setupUi(this);
+    setWindowTitle("Настройка предметов");
     changed = false;
     setWindowFlags(Qt::Dialog | Qt::MSWindowsFixedSizeDialogHint);
     ui->listWidget->addItems(p);
